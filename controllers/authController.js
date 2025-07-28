@@ -57,11 +57,33 @@ exports.verifyEmail = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    
+    // First, check if user exists
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
-    if (!user.isVerified) return res.status(400).json({ message: 'Please verify your email first' });
-    // Compare plain text password
-    if (user.password !== password) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!user) {
+      return res.status(400).json({ 
+        message: 'No account found with this email. Please sign up first.',
+        errorType: 'EMAIL_NOT_FOUND'
+      });
+    }
+    
+    // Check if email is verified
+    if (!user.isVerified) {
+      return res.status(400).json({ 
+        message: 'Please verify your email first. Check your inbox for the verification link.',
+        errorType: 'EMAIL_NOT_VERIFIED'
+      });
+    }
+    
+    // Check password
+    if (user.password !== password) {
+      return res.status(400).json({ 
+        message: 'Invalid password. Please check your credentials.',
+        errorType: 'INVALID_PASSWORD'
+      });
+    }
+    
+    // Login successful
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.json({ 
       token, 
