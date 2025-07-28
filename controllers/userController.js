@@ -23,6 +23,7 @@ exports.updateProfile = async (req, res) => {
 exports.acceptAgreement = async (req, res) => {
   try {
     req.user.acceptedAgreement = true;
+    req.user.onboardingStep = 'preferences';
     await req.user.save();
     res.json({ message: 'Agreement accepted' });
   } catch (err) {

@@ -13,6 +13,8 @@ const UserSchema = new mongoose.Schema({
     default: {},
   },
   acceptedAgreement: { type: Boolean, default: false },
+  hasCompletedOnboarding: { type: Boolean, default: false },
+  onboardingStep: { type: String, enum: ['agreement', 'preferences', 'completed'], default: 'agreement' },
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema); 

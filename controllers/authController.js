@@ -63,7 +63,17 @@ exports.login = async (req, res) => {
     // Compare plain text password
     if (user.password !== password) return res.status(400).json({ message: 'Invalid credentials' });
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user._id, email: user.email, name: user.name } });
+    res.json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        email: user.email, 
+        name: user.name,
+        hasCompletedOnboarding: user.hasCompletedOnboarding,
+        onboardingStep: user.onboardingStep,
+        acceptedAgreement: user.acceptedAgreement
+      } 
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -104,6 +114,42 @@ exports.resetPassword = async (req, res) => {
     user.resetPasswordExpires = undefined;
     await user.save();
     res.json({ message: 'Password reset successful' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.resendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: 'Email is already verified' });
+    }
+
+    // Generate new verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    user.verificationToken = verificationToken;
+    await user.save();
+
+    const verifyUrl = `${CLIENT_URL}/api/auth/verify/${verificationToken}`;
+
+    try {
+      await sendEmail(
+        email,
+        'Verify your email',
+        `<p>Click <a href="${verifyUrl}">here</a> to verify your email.</p>`
+      );
+      res.json({ message: 'Verification email sent successfully' });
+    } catch (emailErr) {
+      console.error('Email send error:', emailErr);
+      res.status(500).json({ message: 'Failed to send verification email. Please try again.' });
+    }
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

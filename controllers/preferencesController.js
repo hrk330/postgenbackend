@@ -5,6 +5,8 @@ exports.getPreferences = async (req, res) => {
 exports.updatePreferences = async (req, res) => {
   try {
     req.user.preferences = req.body;
+    req.user.onboardingStep = 'completed';
+    req.user.hasCompletedOnboarding = true;
     await req.user.save();
     res.json({ message: 'Preferences updated', preferences: req.user.preferences });
   } catch (err) {
