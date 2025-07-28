@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const sendEmail = require('../utils/sendEmail');
 
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5000';
+const CLIENT_URL = process.env.CLIENT_URL || 'https://postgenbackend.onrender.com';
 
 exports.register = async (req, res) => {
   try {
