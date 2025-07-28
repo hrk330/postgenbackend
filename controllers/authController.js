@@ -153,4 +153,59 @@ exports.resendVerificationEmail = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+};
+
+// Request account deletion
+exports.requestAccountDeletion = async (req, res) => {
+  try {
+    const user = req.user;
+    
+    // Generate deletion token
+    const deleteToken = crypto.randomBytes(32).toString('hex');
+    user.deleteAccountToken = deleteToken;
+    user.deleteAccountExpires = Date.now() + 3600000; // 1 hour
+    await user.save();
+
+    const deleteUrl = `${CLIENT_URL}/api/auth/confirm-delete/${deleteToken}`;
+
+    try {
+      await sendEmail(
+        user.email,
+        'Confirm Account Deletion',
+        `<p>You have requested to delete your account.</p>
+         <p>Click <a href="${deleteUrl}">here</a> to confirm account deletion.</p>
+         <p><strong>Warning:</strong> This action cannot be undone. All your data will be permanently deleted.</p>
+         <p>This link expires in 1 hour.</p>`
+      );
+      res.json({ message: 'Account deletion confirmation email sent' });
+    } catch (emailErr) {
+      console.error('Email send error:', emailErr);
+      res.status(500).json({ message: 'Failed to send confirmation email. Please try again.' });
+    }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Confirm account deletion
+exports.confirmAccountDeletion = async (req, res) => {
+  try {
+    const { token } = req.params;
+    
+    const user = await User.findOne({
+      deleteAccountToken: token,
+      deleteAccountExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired deletion token' });
+    }
+
+    // Delete the user account
+    await User.findByIdAndDelete(user._id);
+    
+    res.json({ message: 'Account deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 }; 

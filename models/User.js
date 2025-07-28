@@ -15,6 +15,9 @@ const UserSchema = new mongoose.Schema({
   acceptedAgreement: { type: Boolean, default: false },
   hasCompletedOnboarding: { type: Boolean, default: false },
   onboardingStep: { type: String, enum: ['agreement', 'preferences', 'completed'], default: 'agreement' },
+  // Account deletion fields
+  deleteAccountToken: { type: String },
+  deleteAccountExpires: { type: Date },
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema); 
