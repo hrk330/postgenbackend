@@ -2,6 +2,8 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const sendEmail = require('../utils/sendEmail');
+const emailTemplates = require('../templates/emailTemplates');
+const confirmationPages = require('../templates/confirmationPages');
 
 const CLIENT_URL = process.env.CLIENT_URL || 'https://postgenbackend.onrender.com';
 
@@ -26,8 +28,8 @@ exports.register = async (req, res) => {
     try {
       await sendEmail(
         email,
-        'Verify your email',
-        `<p>Click <a href="${verifyUrl}">here</a> to verify your email.</p>`
+        'Verify Your Email - PostGen AI',
+        emailTemplates.emailVerification(name, verifyUrl, email)
       );
       res.status(201).json({ message: 'Registration successful, please check your email to verify.' });
     } catch (emailErr) {
@@ -48,9 +50,9 @@ exports.verifyEmail = async (req, res) => {
     user.isVerified = true;
     user.verificationToken = undefined;
     await user.save();
-    res.json({ message: 'Email verified successfully' });
+    res.send(confirmationPages.emailVerifiedSuccess);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).send(confirmationPages.errorPage);
   }
 };
 
@@ -111,12 +113,17 @@ exports.forgotPassword = async (req, res) => {
     user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
     await user.save();
     const resetUrl = `${CLIENT_URL}/api/auth/reset-password/${resetToken}`;
-    await sendEmail(
-      email,
-      'Reset your password',
-      `<p>Click <a href="${resetUrl}">here</a> to reset your password. This link expires in 1 hour.</p>`
-    );
-    res.json({ message: 'Password reset email sent' });
+    try {
+      await sendEmail(
+        email,
+        'Reset Your Password - PostGen AI',
+        emailTemplates.passwordReset(user.name, resetUrl, email)
+      );
+      res.json({ message: 'Password reset email sent' });
+    } catch (emailErr) {
+      console.error('Email send error:', emailErr);
+      res.status(500).json({ message: 'Failed to send password reset email. Please try again.' });
+    }
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -135,9 +142,9 @@ exports.resetPassword = async (req, res) => {
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
-    res.json({ message: 'Password reset successful' });
+    res.send(confirmationPages.passwordResetSuccess);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).send(confirmationPages.errorPage);
   }
 };
 
@@ -164,8 +171,8 @@ exports.resendVerificationEmail = async (req, res) => {
     try {
       await sendEmail(
         email,
-        'Verify your email',
-        `<p>Click <a href="${verifyUrl}">here</a> to verify your email.</p>`
+        'Verify Your Email - PostGen AI',
+        emailTemplates.emailVerification(user.name, verifyUrl, email)
       );
       res.json({ message: 'Verification email sent successfully' });
     } catch (emailErr) {
@@ -193,11 +200,8 @@ exports.requestAccountDeletion = async (req, res) => {
     try {
       await sendEmail(
         user.email,
-        'Confirm Account Deletion',
-        `<p>You have requested to delete your account.</p>
-         <p>Click <a href="${deleteUrl}">here</a> to confirm account deletion.</p>
-         <p><strong>Warning:</strong> This action cannot be undone. All your data will be permanently deleted.</p>
-         <p>This link expires in 1 hour.</p>`
+        'Confirm Account Deletion - PostGen AI',
+        emailTemplates.accountDeletion(user.name, deleteUrl, user.email)
       );
       res.json({ message: 'Account deletion confirmation email sent' });
     } catch (emailErr) {
@@ -220,14 +224,14 @@ exports.confirmAccountDeletion = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).json({ message: 'Invalid or expired deletion token' });
+      return res.status(400).send(confirmationPages.invalidDeletionLink);
     }
 
     // Delete the user account
     await User.findByIdAndDelete(user._id);
     
-    res.json({ message: 'Account deleted successfully' });
+    res.send(confirmationPages.accountDeletedSuccess);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).send(confirmationPages.errorPage);
   }
 }; 

@@ -23,6 +23,7 @@ app.use('/api/user', require('./routes/user'));
 app.use('/api/posts', require('./routes/posts'));
 app.use('/api/preferences', require('./routes/preferences'));
 app.use('/api/agreement', require('./routes/agreement'));
+app.use('/api/twitter', require('./routes/twitter'));
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
