@@ -25,6 +25,12 @@ app.use('/api/preferences', require('./routes/preferences'));
 app.use('/api/agreement', require('./routes/agreement'));
 app.use('/api/twitter', require('./routes/twitter'));
 
+// New enhanced routes for My Posts & Tweets
+app.use('/api/approved-posts', require('./routes/approvedPosts'));
+app.use('/api/scheduled-posts', require('./routes/scheduledPosts'));
+app.use('/api/post-templates', require('./routes/postTemplates'));
+app.use('/api/schedule-templates', require('./routes/scheduleTemplates'));
+
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
